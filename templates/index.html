@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block sidebar %}
+<ul>
+    {% for channel in channels %}
+    <li>{{ channel.name }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}
+
+{% block main %}
+<div class="row">
+    <ul id="messages">
+
+    </ul>
+</div>
+<div class="row">
+    <form>
+        <input type="text" id="m">
+        <button type="submit" id="send">Send</button>
+    </form>
+</div>
+{% endblock %}
