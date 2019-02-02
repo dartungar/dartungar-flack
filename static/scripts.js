@@ -1,53 +1,74 @@
-// connect to socket
-
-var socket = io.connect('http://'+ document.domain + ':' + location.port)
-
-function addMessage(list, message) {
-    const li = document.createElement('li');
-    li.innerHTML = message;
-    list.append(li);
-};
-
-// test
-socket.on('connect',  () => {
-    console.log('a user connected')
-});
-
-socket.on('disconnect', () => {
-    console.log('a user disconnected')
-});
-
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // on submit broadcast message to all
-    document.querySelector('#send').addEventListener('click', function(event) {
-        // try to prevent page reloading
-        event.preventDefault();
+    // define variables
+
+    var msglist = document.querySelector('#messages');
+    var sendbtn = document.querySelector('#send');
+    var socket = io.connect('http://'+ document.domain + ':' + location.port);
+
+    // some logic
+    // dont blame me!
+
+    var appendMessage = function (list, message) {
+        const li = document.createElement('li');
+        li.innerHTML = message;
+        list.append(li);
+    };
+
+
+    // emit message to server
+    var addNewMessage = function(event) {
+        // prevent page reloading
+        if (event) {
+            event.preventDefault();
+        }
+        
         // get message from input field
         const message = document.querySelector('#m').value;
-
         if (message != '') {
             // emit message
-            socket.emit('new message', {'message': message}); 
+            socket.emit('new message', {'username': 'user', 'message': message});         
             
-            let msglist = document.querySelector('#messages');
-        
-            addMessage(msglist, message );   
-            // debug: log message
-            console.log(message);
             // clean input form
             document.querySelector('#m').value = '';
         };
-        
         // do not submit the form
         return false;
-    }); 
+    }; 
 
-    socket.on('new message', msg => {
-        const msglist = document.querySelector('#messages');
-    
-        addMessage(msglist, msg);
+
+
+    // interface events
+    sendbtn.addEventListener('click', addNewMessage);
+
+    window.addEventListener('keydown', e => {
+        if (e.keyCode == 13) {
+            addNewMessage(event);
+        };
+    });
+
+
+
+    // socket events
+
+    socket.on('connect',  () => {
+        console.log('you have been connected!');      
+    });
+
+    socket.on('disconnect', () => {
+        console.log('a user disconnected')
+    });
+
+    socket.on('reconnect',  () => {
+        console.log('successfully reconnected!');      
+    });
+
+    socket.on('chat message', data => {
+        // append message to messages list
+        appendMessage(msglist, data.message);            
+        // debug: log message
+        console.log(data.message);
     });
     
 });

@@ -18,7 +18,7 @@ def get_channels():
 
 def get_current_channel():
    if 'current_channel' not in g:
-      g.current_channel = ''
+      g.current_channel = 'default'
    
    return g.current_channel
 
@@ -30,13 +30,22 @@ def index():
    # return render_template("index.html", channels = g.channels, current_channel = g.current_channel)
    get_channels()
    get_current_channel()
+   print(g.current_channel)
    return render_template('index.html')
 
-#@socketio.on('new message')
-#def new_message(data):
+@socketio.on('connection')
+def connection():
+   print('user connected')
+
+@socketio.on('new message')
+def new_message(data):
     # TODO
-    # определяем канал
-    #emit('broadcast new message', message, broadcast=True)
+    print(data['message'])
+    emit('chat message',
+      {
+      'username': data['username'], 
+      'message': data['message']
+      })
 
 #TODO
 #@socketio.on('create channel')
