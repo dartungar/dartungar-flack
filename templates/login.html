@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block main %}
+
+<div class="container h-100">
+        <div class="row h-75 d-flex justify-content-center align-items-center">
+            <form action="/login" method="POST">
+                <div class="form-group">
+                    <input class="form-control" type="text" name="username" placeholder="Username">
+                </div>
+                <button class="btn btn-secondary" type="submit">Login</button>
+            </form>
+        </div>
+</div>
+
+{% endblock %}

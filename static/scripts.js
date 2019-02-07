@@ -10,9 +10,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // some logic
     // dont blame me!
 
-    var appendMessage = function (list, message) {
+    var appendMessage = function (list, data) {
         const li = document.createElement('li');
-        li.innerHTML = message;
+        li.innerHTML = `<span style="color:${data.color}">${data.username} </span>: ${data.message}`
         list.append(li);
     };
 
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const message = document.querySelector('#m').value;
         if (message != '') {
             // emit message
-            socket.emit('new message', {'username': 'user', 'message': message});         
+            socket.emit('new message', {'message': message});       
             
             // clean input form
             document.querySelector('#m').value = '';
@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     socket.on('disconnect', () => {
-        console.log('a user disconnected')
+        console.log('a user disconnected');
+        socket.emit('user disconnected');
     });
 
     socket.on('reconnect',  () => {
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     socket.on('chat message', data => {
         // append message to messages list
-        appendMessage(msglist, data.message);            
+        appendMessage(msglist, data);            
         // debug: log message
         console.log(data.message);
     });
