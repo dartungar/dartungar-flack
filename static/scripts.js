@@ -10,12 +10,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // some logic
     // dont blame me!
 
-    var appendMessage = function (list, data) {
+    var appendMessage =  (list, msg) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span style="color:${data.color}">${data.username} </span>: ${data.message}`
+        li.innerHTML = `<span style="color:${msg.color}; font-weight:bold">${msg.username}</span>: ${msg.message}`
         list.append(li);
     };
 
+    var createMsgList = messages => {
+        messages.forEach(msg => {
+            appendMessage(msglist, msg)
+        });
+    }
 
     // emit message to server
     var addNewMessage = function(event) {
@@ -36,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // do not submit the form
         return false;
     }; 
+
+    // TODO: первоначальная загрузка списка сообщений!
 
 
 
@@ -65,11 +72,12 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('successfully reconnected!');      
     });
 
-    socket.on('chat message', data => {
-        // append message to messages list
-        appendMessage(msglist, data);            
+    socket.on('update msglist', messages => {
+        // build message list anew
+        msglist.innerHTML = '';
+        createMsgList(messages);          
         // debug: log message
-        console.log(data.message);
+        //console.log(data.message);
     });
     
 });

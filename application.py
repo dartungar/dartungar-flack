@@ -3,7 +3,7 @@ import random
 
 from utils import Channel, User
 
-from flask import Flask, g, render_template, request, session, url_for
+from flask import Flask, g, render_template, redirect, request, session, url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 colors = ['green', 'lime', 'yellow', 'blue', 'navy', 'teal', 'purple', 'orange', 'maroon', 'olive', 'red']
@@ -18,7 +18,6 @@ socketio = SocketIO(app)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
-   # TODO
    print(g.user)
    if g.user:
       
@@ -37,7 +36,7 @@ def login():
       session['username'] = request.form['username']
       session['color'] = random.choice(colors)
       print(session['username'])
-      return render_template('index.html')
+      return redirect(url_for('index'))
    
    return render_template('login.html')
 
@@ -56,13 +55,13 @@ def connection():
 def new_message(data):
     # TODO
     print(data['message'])
-    #current_channel.add_msg(data)
-    emit('chat message',
-      {
+    msg = {
       'username': session['username'],
       'color': session['color'],
       'message': data['message']
-      }, broadcast=True)
+      }
+    current_channel.add_msg(msg)
+    emit('update msglist', current_channel.messages, broadcast=True)
 
 
 #TODO

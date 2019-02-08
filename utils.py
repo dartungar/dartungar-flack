@@ -24,9 +24,9 @@ class Channel:
         Channel.channels.append(name)
 
 
-    def add_msg(self, msg, user='Anonymous'):
+    def add_msg(self, msg):
         
         if len(self.messages) > Channel.msg_capacity:
             self.messages = self.messages[-Channel.msg_capacity:]
         
-        self.messages.append({"message": msg, "user": user})
+        self.messages.append(msg)
