@@ -2,9 +2,10 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     // define variables
-
+    var channelList = document.querySelector('#channels');
     var msglist = document.querySelector('#messages');
     var sendbtn = document.querySelector('#send');
+    
     var socket = io.connect('http://'+ document.domain + ':' + location.port);
 
     // some logic
@@ -16,11 +17,24 @@ document.addEventListener('DOMContentLoaded', function () {
         list.append(li);
     };
 
-    var createMsgList = messages => {
+    //
+    var recreateMsgList = messages => {
         messages.forEach(msg => {
             appendMessage(msglist, msg)
         });
     }
+
+    // TODO: каналы = кликабельные ссылки! по клику переход на канал
+    // но не перезагрузка, а просто триггер пересоздания канала и списка сообщений
+    // и джоина
+
+    var recreateChannelList = channels => {
+        channels.forEach(channel => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${channel.name}</span>`;
+            channelList.append(li);
+        });
+    };
 
     // emit message to server
     var addNewMessage = function(event) {
@@ -43,6 +57,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }; 
 
     // TODO: первоначальная загрузка списка сообщений!
+    // какой-то триггер, или таймаут. вопрос - откуда взять первоначальный список сообщений?
+    // может, создать какой-то "первоначальный" ивент типа before_request? и для каналов пойдет
+    // может, триггер = изначальный джоин? seems fair
 
 
 
@@ -72,10 +89,15 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('successfully reconnected!');      
     });
 
+    socket.on('init lists', data => {
+        createChannelList(data['channels']);
+        re(data['messages']);
+    })
+
     socket.on('update msglist', messages => {
         // build message list anew
         msglist.innerHTML = '';
-        createMsgList(messages);          
+        re(messages);          
         // debug: log message
         //console.log(data.message);
     });

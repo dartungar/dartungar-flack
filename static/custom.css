@@ -2,6 +2,6 @@ html, body {
     height: 100%;
 }
 
-#messages {
+#messages, #channels {
     list-style: none;
 }

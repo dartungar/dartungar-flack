@@ -41,9 +41,17 @@ def login():
    return render_template('login.html')
 
 # check if user is 'logged in'
+# also init message list and channels list
 @app.before_request
 def load_logged_in_user():
    g.user = session.get('username')
+   # TODO: users list!
+   socketio.emit(
+      'init lists', 
+      {
+      'channels': Channel.channels, 
+      'messages': current_channel.messages
+      })
 
 
 @socketio.on('connection')
@@ -51,16 +59,20 @@ def connection():
    print('user connected')
 
 
+
 @socketio.on('new message')
 def new_message(data):
     # TODO
     print(data['message'])
+    
     msg = {
       'username': session['username'],
       'color': session['color'],
       'message': data['message']
       }
+    
     current_channel.add_msg(msg)
+    
     emit('update msglist', current_channel.messages, broadcast=True)
 
 
@@ -74,11 +86,10 @@ def create_channel(name):
 @socketio.on('join')
 def join_channel(channel):
    global current_channel
-   global user
    current_channel = channel
    emit('user joined channel', 
       {
-      'username': user.name, 
+      'username': session['username'], 
       'channel': current_channel
       }, broadcast=True)
 
