@@ -27,12 +27,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // TODO: каналы = кликабельные ссылки! по клику переход на канал
     // но не перезагрузка, а просто триггер пересоздания канала и списка сообщений
     // и джоина
+    var appendChannel = (list, channel) => {
+        const li = document.createElement('li');
+        li.innerHTML = channel.name;
+        list.append(li);
+    }
 
     var recreateChannelList = channels => {
+        console.log('recreating channel list');
         channels.forEach(channel => {
-            const li = document.createElement('li');
-            li.innerHTML = `<span>${channel.name}</span>`;
-            channelList.append(li);
+            appendChannel(channelList, channel);
         });
     };
 
@@ -90,14 +94,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     socket.on('init lists', data => {
-        createChannelList(data['channels']);
-        re(data['messages']);
+        recreateChannelList(data['channels']);
+        recreateMsgList(data['messages']);
     })
 
     socket.on('update msglist', messages => {
         // build message list anew
         msglist.innerHTML = '';
-        re(messages);          
+        recreateMsgList(messages);          
         // debug: log message
         //console.log(data.message);
     });
