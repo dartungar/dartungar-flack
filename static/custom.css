@@ -5,3 +5,7 @@ html, body {
 #messages, #channels {
     list-style: none;
 }
+
+.sidebar {
+    width: 150px;
+}

@@ -1,17 +1,16 @@
 import os
 import random
 
-from utils import Channel, User
-
 from flask import Flask, g, render_template, redirect, request, session, url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
-colors = ['green', 'lime', 'yellow', 'blue', 'navy', 'teal', 'purple', 'orange', 'maroon', 'olive', 'red']
+#colors = ['green', 'lime', 'yellow', 'blue', 'navy', 'teal', 'purple', 'orange', 'maroon', 'olive', 'red']
 channels = {}
 users = []
 #current_channel = ''
 
 app = Flask(__name__)
+app.debug = True
 #app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.secret_key = 'secret'
 socketio = SocketIO(app)
@@ -23,18 +22,28 @@ def index():
    if g.user:
             
       print(session['current_channel'])
-      init_lists()
-      return render_template('index.html')
+      #init_lists()
+
+      # пока так; может, потом сделаем через какой-то ивент. хотя и это неплохо
+      return render_template('index.html',
+       channels=list(channels.keys()),
+       users=users,
+       messages=channels[session['current_channel']['messages']]
+       )
    
    return render_template('login.html')
+
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
    if request.method == 'POST':
 
-      session['username'] = request.form['username']
-      session['color'] = random.choice(colors)
-      users.append(session['username'])
+      username = request.form['username']
+      session['username'] = username
+      #session['color'] = random.choice(colors)
+      # thanks Eneko Alonso on StackOverflow for random color trick
+      session['color'] = "#%06x" % random.randint(0, 0xFFFFFF)
+      users.append(username)
       #print(session['username'])
       return redirect(url_for('index'))
    

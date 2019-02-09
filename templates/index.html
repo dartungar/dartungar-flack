@@ -1,21 +1,39 @@
 {% extends "layout.html" %}
 
 {% block sidebar %}
-<ul id="channels">
-    
-</ul>
+
+<div class="row h-50 border-bottom">
+    <ul id="channels">
+        {% for channel in channels %}
+            <li>{{ channel }}</li>
+        {% endfor %}
+    </ul>       
+</div>
+
+<div class="row h-50">
+    <ul id="users">
+    {% for user in users %}
+            <li>{{ user }}</li>
+        {% endfor %}
+    </ul>     
+</div>
+
 {% endblock %}
 
+
 {% block main %}
+
 <div class="row h-75">
     <ul id="messages">
 
     </ul>
 </div>
+
 <div class="row">
     <form>
         <input type="text" id="m">
-        <button type="submit" id="send">Send</button>
+        <button type="submit" class="btn btn-sm btn-secondary" id="send">Send</button>
     </form>
 </div>
+
 {% endblock %}
