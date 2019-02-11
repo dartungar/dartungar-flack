@@ -10,11 +10,12 @@ users = []
 #current_channel = ''
 
 app = Flask(__name__)
-app.debug = True
+#app.debug = True
 #app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.secret_key = 'secret'
 socketio = SocketIO(app)
 
+# TODO: комнаты, хе-хе
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -28,12 +29,19 @@ def index():
          create_channel('global')
          print('created global channel anew...')
 
-      if not session.get('current_channel'):
+      
+      current_channel = session.get('current_channel')
+      print(f'current channel is {current_channel}')   
+
+      if not current_channel:
          session['current_channel'] = 'global'
+         print('set current channel to global...')
+         current_channel = session.get('current_channel') # для дебагового стейтмента
          # TODO: разобраться, как изначально задать дефолтную комнату
 
+      # TODO: при перезагрузке страницы джоинит в глобал, почему?
       socketio.emit('join channel', {'channel':session['current_channel']})
-      print(session['current_channel'])
+      print(f'joined {current_channel}!')
       
       return render_template('index.html')
    
@@ -62,23 +70,6 @@ def login():
 def before_req():
    g.user = session.get('username')
    
-   
-
-
-def recreate_lists():
-   
-   channel_list = list(channels.keys())
-   messages = channels[session['current_channel']]['messages']
-   socketio.emit(
-      'recreate lists', 
-      {
-      'channels': channel_list, 
-      'messages': messages,
-      'users': users
-      })
-
-   print(f'initting lists: channels - {channels.keys()} & messages {len(messages)}')
-
 
 @socketio.on('user connected')
 def connection():
@@ -97,10 +88,7 @@ def new_message(data):
     
     add_msg(session['current_channel'], msg)
     
-    emit('update msglist', 
-         channels[session['current_channel']]['messages'], 
-         room=session['current_channel']
-         )
+    recreate_lists() # так ведь?..
 
 
 #TODO
@@ -112,32 +100,43 @@ def create_channel_on_event(data):
       #emit('append channel', {'channel': new_channel})
       recreate_lists()
 
+# TODO возможно, тут как-то играет роль моя структура сообщений и каналов
+# может, все проще, и у сообщений единое хранение, просто разбитое по комнатам?
+# надо проверять как работают комнаты...read the docs!
 
-
-#TODO
+#TODO: почему-то не работает ивент, странно...
 @socketio.on('join channel')
 def join_channel(data):
-   username = session['username']
-   channel = data['channel']
-   session['current_channel'] = channel
-   #channels[channel]['users'].append(session['username'])
-   join_room(channel)
-   emit('user joined channel', 
-      {
-      'username': username, 
-      'channel': channel
-      }, 
-      room=channel)
+
+   newchannel = data['channel']
+
+   if newchannel != session['current_channel']:
+
+      username = session['username']
+      session['current_channel'] = newchannel
+      print(f'user {username} attempting to join channel {newchannel}...')
+      #channels[channel]['users'].append(session['username'])
+      join_room(newchannel)
+      
+      msg = {'username': 'Server', 'message': f'user {username} joined channel'}
+      add_msg(newchannel, msg)
+      
+      recreate_lists()
+      
+      print(f'user {username} joined channel {newchannel}!')
    
-   print(f'user {username} joined channel {channel}!')
+   else:
+      print('staying on the current channel')
 
 
+# TODO вроде все работало, а теперь баги какие-то :(
 @socketio.on('leave channel')
 def leave_channel(data):
    channel = data['channel']
    leave_room(channel)
    #channels[session['current_channel']]['users'].pop(session['username'])
    emit('user left channel', {'username': session['username']}, room=channel)
+   print(f'left room {channel}.')
 
 
 # TODO: сохранить данные о канале на local storage
@@ -166,9 +165,24 @@ def create_channel(name):
       return None
 
 
+def recreate_lists():
+   
+   channel_list = list(channels.keys())
+   messages = channels[session['current_channel']]['messages']
+   socketio.emit(
+      'recreate lists', 
+      {
+      'channels': channel_list, 
+      'messages': messages,
+      'users': users
+      })
+
+   print(f'initting lists: channels - {channel_list} & messages {len(messages)}')
 
 
 if __name__ == "__main__":
+   #socketio.run(app, host='0.0.0.0', port=8080, debug=False)
    socketio.run(app)
+   
    
     

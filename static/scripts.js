@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     var socket = io.connect('http://'+ document.domain + ':' + location.port);
 
-    var currentChannel = '';
+
 
     // проверим чо там с листенерами
     var numListeners = 0;
@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     //
     var recreateMsgList = messages => {
+        msglist.innerHTML = '';
         messages.forEach(msg => {
             appendMessage(msglist, msg)
         });
@@ -42,35 +43,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const id = `channel-${channel}`;
         li.innerHTML = `<a href='#' class="link-channel" id="${id}">${channel}</a>`;
         list.append(li);
-        //updateChannelLinkListener(); // ВОТ В ЭТОЙ ХУЙНЕ ДЕЛО! АААА TODO FIXME FUCKYOU
-        // надо бы отсюда вынести эту хуйню
-        //updateChannelLinkListener(id);
     }
 
-    // тут какие-то проблемы, кажется
-    // добавил логи для проверки
+
     var recreateChannelList = channels => {
         console.log('recreating channel list');
+        channelList.innerHTML = '';
         channels.forEach(channel => {
             //console.log(`appending channel ${channel}`);
             appendChannel(channelList, channel);
             //console.log(`appended channel ${channel}! yay!`);
         });
         updateChannelLinkListeners();
-    }
-
-    // FIXME
-    // бля, пробелы нельзя в id!!
-    // => new channel не канает
-    // ищи другой путь, без id
-    var updateChannelLinkListener = function (id) {
-        id = `#${id}`;
-        const channelLink = document.querySelector(id);
-        //console.log(`updating channel link listener ${id}`);
-        // какие-то проблемы, пока вырубем
-        const newChannel = channelLink.innerHTML;
-        channelLink.addEventListener('click', switchChannel(currentChannel, newChannel));
-        //console.log(`added event listener to ${newChannel} link`);
     }
 
     
@@ -86,16 +70,18 @@ document.addEventListener('DOMContentLoaded', function () {
     
 
     var switchChannel = (currentChannel, newChannel) => {
-        console.log(`new channel is ${newChannel}`);
+        
         if (newChannel != currentChannel) {
             leaveChannel(currentChannel);
-            joinChannel(newChannel);            
+            joinChannel(newChannel);
+            console.log(`new channel is ${newChannel}`);            
         };             
     };
 
     var joinChannel = (newChannel) => {
         socket.emit('join channel', {'channel': newChannel});
         console.log(`joining channel ${newChannel}`);
+        currentChannel = newChannel;
     }
 
     var leaveChannel = (currentChannel) => {
@@ -114,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     var recreateUserList = users => {
+        userList.innerHTML = '';
         users.forEach(user => {
             appendUser(userList, user);
         });
@@ -162,19 +149,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // socket events
 
     socket.on('connect',  () => {
-        console.log('you have been connected!');
-        socket.emit('user connected');
-        // ставим дефолтный канал
-        // надо сделать так чтобы какое-то взаимодействие с сервера было
-        // коряво. TODO
-        if (currentChannel == '') {
-            currentChannel = 'global';
-        };     
+        
+        if (!localStorage.getItem('current_channel')) {
+            localStorage.setItem('current_channel', 'global');
+        };
+        currentChannel = localStorage.getItem('current_channel');
+        // TODO: он не будет дублировать джоин с серверсайдом?..
+        socket.emit('join channel', {'channel': currentChannel});
+
+        socket.emit('user connected');   
+        console.log(`you have been connected on channel ${currentChannel}!`); 
     });
 
     socket.on('disconnect', () => {
         console.log('a user disconnected');
         socket.emit('user disconnected');
+        localStorage.setItem('current_channel', currentChannel);
     });
 
     socket.on('reconnect',  () => {
@@ -198,6 +188,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // КАРОЧ
     // решил вообще без append channel обойтись
     // тупо список каналов перезагружать буду
+    // правда, дублируются каналы и юзеры...почемуто
+    // TODO: сделать рекреейт всех списков при аппенде чаннела
     socket.on('append channel', data => {
         appendChannel(channelList, data['channel']);
     });
