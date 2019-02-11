@@ -19,17 +19,23 @@ socketio = SocketIO(app)
 @app.route("/", methods=['GET', 'POST'])
 def index():
    print(g.user)
+   
    if g.user:
-            
-      print(session['current_channel'])
-      #init_lists()
+      # TODO: читаем имя последнего канала с локал стореджа
+      # доработай логику ниже, если надо
 
-      # пока так; может, потом сделаем через какой-то ивент. хотя и это неплохо
-      return render_template('index.html',
-       channels=list(channels.keys()),
-       users=users,
-       messages=channels[session['current_channel']['messages']]
-       )
+      if not channels.get('global'):
+         create_channel('global')
+         print('created global channel anew...')
+
+      if not session.get('current_channel'):
+         session['current_channel'] = 'global'
+         # TODO: разобраться, как изначально задать дефолтную комнату
+
+      socketio.emit('join channel', {'channel':session['current_channel']})
+      print(session['current_channel'])
+      
+      return render_template('index.html')
    
    return render_template('login.html')
 
@@ -49,36 +55,34 @@ def login():
    
    return render_template('login.html')
 
+
 # check if user is 'logged in'
 # also init message list and channels list
 @app.before_request
 def before_req():
    g.user = session.get('username')
    
-   if not session.get('current_channel'):
-         session['current_channel'] = 'global'
-         #channels[session['current_channel']] = {'messages': [], 'users': []}
-         create_channel(session['current_channel'])
+   
 
 
-# FIXME
-def init_lists():
+def recreate_lists():
    
    channel_list = list(channels.keys())
    messages = channels[session['current_channel']]['messages']
    socketio.emit(
-      'init lists', 
+      'recreate lists', 
       {
       'channels': channel_list, 
-      'messages': messages
+      'messages': messages,
+      'users': users
       })
 
    print(f'initting lists: channels - {channels.keys()} & messages {len(messages)}')
 
 
-@socketio.on('connection')
+@socketio.on('user connected')
 def connection():
-   print('user connected')
+   recreate_lists()
 
 
 @socketio.on('new message')
@@ -93,45 +97,75 @@ def new_message(data):
     
     add_msg(session['current_channel'], msg)
     
-    emit('update msglist', channels[session['current_channel']]['messages'], broadcast=True)
+    emit('update msglist', 
+         channels[session['current_channel']]['messages'], 
+         room=session['current_channel']
+         )
 
 
 #TODO
 @socketio.on('new channel')
-def create_channel(name):
-   if name not in channels:
-      channels[name] = {'messages': [], 'users': []}
-   else:
-      pass #TODO что делаем, если канал уже есть?
+def create_channel_on_event(data):
+   name = data['channel']
+   new_channel = create_channel(name)
+   if new_channel:
+      #emit('append channel', {'channel': new_channel})
+      recreate_lists()
+
 
 
 #TODO
-@socketio.on('join')
-def join_channel(channel):
-   
+@socketio.on('join channel')
+def join_channel(data):
+   username = session['username']
+   channel = data['channel']
    session['current_channel'] = channel
+   #channels[channel]['users'].append(session['username'])
+   join_room(channel)
    emit('user joined channel', 
       {
-      'username': session['username'], 
-      'channel': session['current_channel']
-      }, broadcast=True)
+      'username': username, 
+      'channel': channel
+      }, 
+      room=channel)
+   
+   print(f'user {username} joined channel {channel}!')
 
-@socketio.on('leave')
-def leave_channel(channel):
-   channels[channel][session['current_channel']]['users'].pop(session['username'])
+
+@socketio.on('leave channel')
+def leave_channel(data):
+   channel = data['channel']
+   leave_room(channel)
+   #channels[session['current_channel']]['users'].pop(session['username'])
+   emit('user left channel', {'username': session['username']}, room=channel)
 
 
-# TODO
+# TODO: сохранить данные о канале на local storage
 #@socketio.on('user disconnected')
 #def user_disconnected():
 #   users.pop(session['username'])
 
 
 def add_msg(channel, message):
+   
    msg_capacity = 100
+
    channels[channel]['messages'].append(message)
+
    if len(channels[channel]['messages']) > msg_capacity:
       channel['messages'] = channel['messages'][-msg_capacity:] 
+
+
+def create_channel(name):
+   if name not in list(channels.keys()):
+      channels[name] = {'messages': [], 'users': []}
+      return name
+   else:
+      print('channel already exists')
+      # TODO: алерт типа ченнел экзистс в самом интерфейсе
+      return None
+
+
 
 
 if __name__ == "__main__":

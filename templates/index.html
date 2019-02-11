@@ -2,37 +2,40 @@
 
 {% block sidebar %}
 
-<div class="row h-50 border-bottom">
-    <ul id="channels">
-        {% for channel in channels %}
-            <li>{{ channel }}</li>
-        {% endfor %}
-    </ul>       
+<div class="row h-50">
+    <span>Channels</span>
+    <ul id="channels" class="ml-1">
+
+    </ul>
+    
+</div>
+
+<div class="border-bottom">
+    <a href="#" id="create-channel"><small>create new channel</small></a>
 </div>
 
 <div class="row h-50">
+    <span>Users</span>
     <ul id="users">
-    {% for user in users %}
-            <li>{{ user }}</li>
-        {% endfor %}
+
     </ul>     
 </div>
 
 {% endblock %}
-
+ <!--TODO: "растягивающиеся" контейнеры под списки в сайдбаре!-->
 
 {% block main %}
 
-<div class="row h-75">
+<div class="row h-75 border-bottom">
     <ul id="messages">
 
     </ul>
 </div>
 
-<div class="row">
-    <form>
-        <input type="text" id="m">
-        <button type="submit" class="btn btn-sm btn-secondary" id="send">Send</button>
+<div class="row w-100">
+    <form class="form-inline w-100">
+            <input type="text" class="form-control mr-3" id="m" autofocus>
+            <button type="submit" class="btn btn-secondary" id="send">Send</button>
     </form>
 </div>
 

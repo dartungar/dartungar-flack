@@ -2,10 +2,15 @@ html, body {
     height: 100%;
 }
 
-#messages, #channels {
+.sidebar {
+    width: 200px;
+}
+
+#messages, #channels, #users {
     list-style: none;
 }
 
-.sidebar {
-    width: 150px;
+#m {
+    width: 90%;
 }
+
