@@ -27,23 +27,8 @@ def index():
 
    # можно попробовать вынести всю логику с каналом на @socket.on connect
    if g.user:
-      
-      if not channels.get('global'):
-         create_channel('global')
-         print('created global channel anew...')
-      
-      current_channel = session.get('current_channel')
-      print(f'current channel is {current_channel}')   
-
-      if not current_channel:
-         session['current_channel'] = 'global'
-         print('set current channel to global...')
-         current_channel = session.get('current_channel') # для дебагового стейтмента
-
       # TODO: при перезагрузке страницы джоинит в глобал, почему?
       # может, потому что дублируется функционал с JS?
-
-      print(f'joined {current_channel}!')
       
       return render_template('index.html')
    
@@ -66,15 +51,28 @@ def login():
 
 
 # check if user is 'logged in'
-# also init message list and channels list
 @app.before_request
 def before_req():
    g.user = session.get('username')
    
 
-@socketio.on('user connected')
-def connection():
+@socketio.on('connect')
+def connect():
+   
+   if not channels.get('global'):
+      create_channel('global')
+      print('created global channel anew...')
+
+   emit('get channel name')
+   
+
+@socketio.on('receive channel name')
+def receive_channel_name(data):
+   
+   session['current_channel'] = data['channel']
+   join_channel(data)
    recreate_lists()
+
 
 
 @socketio.on('new message')
@@ -127,7 +125,6 @@ def join_channel(data):
       print('staying on the current channel')
 
 
-# TODO вроде все работало, а теперь баги какие-то :(
 @socketio.on('leave channel')
 def leave_channel(data):
    channel = data['channel']

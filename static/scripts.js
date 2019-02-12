@@ -149,24 +149,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // socket events
 
-    socket.on('connect',  () => {
+    socket.on('get channel name',  () => {
 
         if (!localStorage.getItem('current_channel')) {
             localStorage.setItem('current_channel', 'global');
         };
         currentChannel = localStorage.getItem('current_channel');
         console.log('read channel from local storage')
-        // TODO: он не будет дублировать джоин с серверсайдом?..
-        socket.emit('join channel', {'channel': currentChannel});
-
-        socket.emit('user connected');   
-        console.log(`you have been connected on channel ${currentChannel}!`); 
+        socket.emit('receive channel name', {'channel': currentChannel});
     });
 
-    socket.on('user disconnected', data => {
-        console.log('a user disconnected');
-        localStorage.setItem('current_channel', data['channel']);
-        console.log('saved channel to local storage')
+    socket.on('disconnect', () => {
+        console.log('really disconnected');
+        localStorage.setItem('current_channel', currentChannel);
+        console.log('saved channel to local storage');
     });
 
     socket.on('reconnect',  () => {
