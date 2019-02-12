@@ -11,10 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var socket = io.connect('http://'+ document.domain + ':' + location.port);
 
 
-
-    // проверим чо там с листенерами
-    var numListeners = 0;
-
     // some logic
     // dont blame me!
 
@@ -134,11 +130,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // interface events
+    window.addEventListener('beforeunload', () => {
+        socket.disconnect();
+    });
+
     sendbtn.addEventListener('click', addNewMessage);
 
     window.addEventListener('keydown', e => {
         if (e.keyCode == 13) {
-            addNewMessage(event);
+            // почему event? почему не e?
+            addNewMessage();
         };
     });
 
@@ -149,11 +150,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // socket events
 
     socket.on('connect',  () => {
-        
+
         if (!localStorage.getItem('current_channel')) {
             localStorage.setItem('current_channel', 'global');
         };
         currentChannel = localStorage.getItem('current_channel');
+        console.log('read channel from local storage')
         // TODO: он не будет дублировать джоин с серверсайдом?..
         socket.emit('join channel', {'channel': currentChannel});
 
@@ -161,10 +163,10 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log(`you have been connected on channel ${currentChannel}!`); 
     });
 
-    socket.on('disconnect', () => {
+    socket.on('user disconnected', data => {
         console.log('a user disconnected');
-        socket.emit('user disconnected');
-        localStorage.setItem('current_channel', currentChannel);
+        localStorage.setItem('current_channel', data['channel']);
+        console.log('saved channel to local storage')
     });
 
     socket.on('reconnect',  () => {

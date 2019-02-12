@@ -2,7 +2,7 @@ import os
 import random
 
 from flask import Flask, g, render_template, redirect, request, session, url_for
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, disconnect, emit, join_room, leave_room
 
 #colors = ['green', 'lime', 'yellow', 'blue', 'navy', 'teal', 'purple', 'orange', 'maroon', 'olive', 'red']
 channels = {}
@@ -10,25 +10,27 @@ users = []
 #current_channel = ''
 
 app = Flask(__name__)
-#app.debug = True
+app.debug = True
 #app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.secret_key = 'secret'
 socketio = SocketIO(app)
 
-# TODO: комнаты, хе-хе
+# TODO: часть функций, возможно, дублируется в JS и тут. Почитай доки flask-socketio, посмотри, что можно "схлопнуть"
+# например ивент connect можно сюда (или даже нужно)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
    print(g.user)
    
-   if g.user:
-      # TODO: читаем имя последнего канала с локал стореджа
-      # доработай логику ниже, если надо
+   if not g.user:
+      return render_template('login.html')
 
+   # можно попробовать вынести всю логику с каналом на @socket.on connect
+   if g.user:
+      
       if not channels.get('global'):
          create_channel('global')
          print('created global channel anew...')
-
       
       current_channel = session.get('current_channel')
       print(f'current channel is {current_channel}')   
@@ -37,15 +39,15 @@ def index():
          session['current_channel'] = 'global'
          print('set current channel to global...')
          current_channel = session.get('current_channel') # для дебагового стейтмента
-         # TODO: разобраться, как изначально задать дефолтную комнату
 
       # TODO: при перезагрузке страницы джоинит в глобал, почему?
-      socketio.emit('join channel', {'channel':session['current_channel']})
+      # может, потому что дублируется функционал с JS?
+
       print(f'joined {current_channel}!')
       
       return render_template('index.html')
    
-   return render_template('login.html')
+   
 
 
 @app.route("/login", methods=['GET', 'POST'])
@@ -54,7 +56,6 @@ def login():
 
       username = request.form['username']
       session['username'] = username
-      #session['color'] = random.choice(colors)
       # thanks Eneko Alonso on StackOverflow for random color trick
       session['color'] = "#%06x" % random.randint(0, 0xFFFFFF)
       users.append(username)
@@ -97,14 +98,11 @@ def create_channel_on_event(data):
    name = data['channel']
    new_channel = create_channel(name)
    if new_channel:
-      #emit('append channel', {'channel': new_channel})
       recreate_lists()
 
-# TODO возможно, тут как-то играет роль моя структура сообщений и каналов
-# может, все проще, и у сообщений единое хранение, просто разбитое по комнатам?
-# надо проверять как работают комнаты...read the docs!
 
-#TODO: почему-то не работает ивент, странно...
+
+#FIXME: всё время коннектится к глобалу
 @socketio.on('join channel')
 def join_channel(data):
 
@@ -139,10 +137,15 @@ def leave_channel(data):
    print(f'left room {channel}.')
 
 
-# TODO: сохранить данные о канале на local storage
-#@socketio.on('user disconnected')
-#def user_disconnected():
-#   users.pop(session['username'])
+
+@socketio.on('disconnect')
+def user_disconnected():
+   # FIXME: не видит контекст сессии на дисконнекте
+   #username = session['username']
+   channel = session['current_channel']
+   leave_channel({'channel': channel})
+   emit('user disconnected', {'channel': channel})
+   #print(f'user {username} disconnected!')
 
 
 def add_msg(channel, message):
@@ -166,7 +169,7 @@ def create_channel(name):
 
 
 def recreate_lists():
-   
+   # FIXME: выдает ошибку при перезагрузке страницы, мол, нет ключа global
    channel_list = list(channels.keys())
    messages = channels[session['current_channel']]['messages']
    socketio.emit(
