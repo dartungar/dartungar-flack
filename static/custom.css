@@ -6,11 +6,28 @@ html, body {
     width: 200px;
 }
 
+.sidebar-title {
+    font-weight: bolder;
+}
+
+.link-active {
+    font-weight: bold;
+}
+
+#channel-list-container, #user-list-container {
+    overflow: auto;
+}
+
 #messages, #channels, #users {
     list-style: none;
 }
 
 #m {
     width: 90%;
+}
+
+.timestamp {
+    color: grey;
+    font-size: 50%;
 }
 

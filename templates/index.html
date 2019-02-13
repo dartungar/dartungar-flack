@@ -3,26 +3,33 @@
 {% block sidebar %}
 
 <div class="row h-50">
-    <span>Channels</span>
-    <ul id="channels" class="ml-1">
-
-    </ul>
+    <div id="channel-list-container">
+        <span class="sidebar-title">Channels</span>
+        <br>
+        <ul id="channels" class="ml-1">
+    
+        </ul>
+    </div>
+    
     
 </div>
 
-<div class="border-bottom">
+<div class="border-bottom"> 
     <a href="#" id="create-channel"><small>create new channel</small></a>
 </div>
 
 <div class="row h-50">
-    <span>Users</span>
-    <ul id="users">
-
-    </ul>     
+    <div id="user-list-container">
+        <span class="sidebar-title">Users</span>
+        <br>
+        <ul id="users">
+    
+        </ul> 
+    </div>
+        
 </div>
 
 {% endblock %}
- <!--TODO: "растягивающиеся" контейнеры под списки в сайдбаре!-->
 
 {% block main %}
 

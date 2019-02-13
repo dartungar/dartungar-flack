@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var appendMessage =  (list, msg) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span style="color:${msg.color}; font-weight:bold">${msg.username}</span>: ${msg.message}`
+        li.innerHTML = `<span class="timestamp">${msg.timestamp}  </span><span style="color:${msg.color}; font-weight:bold">${msg.username}</span>: ${msg.message}`
         list.append(li);
     };
 
@@ -31,13 +31,18 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.forEach(msg => {
             appendMessage(msglist, msg)
         });
+        // TODO: список сообщений уползает вниз
+        // может, препендить?
     }
 
 
     var appendChannel = (list, channel) => {
         const li = document.createElement('li');
-        const id = `channel-${channel}`;
-        li.innerHTML = `<a href='#' class="link-channel" id="${id}">${channel}</a>`;
+        let isActiveLink = '';
+        if (channel == currentChannel) {
+            isActiveLink = 'link-active';
+        };
+        li.innerHTML = `<a href='#' class="link-channel ${isActiveLink}">${channel}</a>`;
         list.append(li);
     }
 
@@ -86,12 +91,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var createChannel = () => {
-        const channel = 'new channel'; // TODO: промпт на название канала
+        const channel = getChannelFromPrompt();
         socket.emit('new channel', {'channel': channel});
-        // TODO: поделить функцию на две, сначала сервер сайд проверка 
-        // только потом аппенд
-        //appendChannel(channelList, channel);
-        
+    }
+
+    var getChannelFromPrompt = () => {
+        const channel = prompt('enter new channel name:');
+        return channel;
+        // изящнее будет какой-то попап с Бутстрапа захуячить
+        // проперти хидден может юзать? типа скрыл форму для имени канала прямо в списке каналов
+        // а по клику на нью ченнел показываешь
     }
 
 
@@ -130,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // interface events
+
     window.addEventListener('beforeunload', () => {
         socket.disconnect();
     });
@@ -183,15 +193,19 @@ document.addEventListener('DOMContentLoaded', function () {
         //console.log(data.message);
     });
 
-    // КАРОЧ
-    // решил вообще без append channel обойтись
-    // тупо список каналов перезагружать буду
-    // правда, дублируются каналы и юзеры...почемуто
-    // TODO: сделать рекреейт всех списков при аппенде чаннела
     socket.on('append channel', data => {
         appendChannel(channelList, data['channel']);
     });
 
+    socket.on('channel already exists', () => {
+        const message = {
+            'username': 'Server',
+            'message': `channel already exists!`
+        }
+        appendMessage(msglist, message);
+    });
+
+    // TODO: пофиксить таймстемпы
     socket.on('user joined channel', data =>{
         const message = {
             'username': 'Server',
@@ -201,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
         currentChannel = data['channel'];
     });
 
+    // FIXME
     socket.on('user left channel', data => {
         const message = {
             'username': 'Server',

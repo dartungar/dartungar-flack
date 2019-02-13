@@ -1,3 +1,4 @@
+import datetime
 import os
 import random
 
@@ -21,19 +22,15 @@ socketio = SocketIO(app)
 @app.route("/", methods=['GET', 'POST'])
 def index():
    print(g.user)
-   
-   if not g.user:
-      return render_template('login.html')
 
-   # можно попробовать вынести всю логику с каналом на @socket.on connect
    if g.user:
-      # TODO: при перезагрузке страницы джоинит в глобал, почему?
-      # может, потому что дублируется функционал с JS?
-      
       return render_template('index.html')
    
+   return render_template('login.html')
    
 
+# FIXME: после закрытия окна и возвращения в приложение пользователь заново заносится в список!
+# присваивать user_id?
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -79,9 +76,11 @@ def receive_channel_name(data):
 def new_message(data):
     print(data['message'])
     
+    timestamp = datetime.datetime.now().strftime('%H:%M:%S')
     msg = {
       'username': session['username'],
       'color': session['color'],
+      'timestamp': timestamp,
       'message': data['message']
       }
     
@@ -90,7 +89,6 @@ def new_message(data):
     recreate_lists() # так ведь?..
 
 
-#TODO
 @socketio.on('new channel')
 def create_channel_on_event(data):
    name = data['channel']
@@ -100,7 +98,6 @@ def create_channel_on_event(data):
 
 
 
-#FIXME: всё время коннектится к глобалу
 @socketio.on('join channel')
 def join_channel(data):
 
@@ -137,12 +134,10 @@ def leave_channel(data):
 
 @socketio.on('disconnect')
 def user_disconnected():
-   # FIXME: не видит контекст сессии на дисконнекте
-   #username = session['username']
+
    channel = session['current_channel']
    leave_channel({'channel': channel})
    emit('user disconnected', {'channel': channel})
-   #print(f'user {username} disconnected!')
 
 
 def add_msg(channel, message):
@@ -152,7 +147,8 @@ def add_msg(channel, message):
    channels[channel]['messages'].append(message)
 
    if len(channels[channel]['messages']) > msg_capacity:
-      channel['messages'] = channel['messages'][-msg_capacity:] 
+      channels[channel]['messages'] = channels[channel]['messages'][-msg_capacity:]
+      print('truncated message list!') 
 
 
 def create_channel(name):
@@ -161,8 +157,7 @@ def create_channel(name):
       return name
    else:
       print('channel already exists')
-      # TODO: алерт типа ченнел экзистс в самом интерфейсе
-      return None
+      emit('channel already exists')
 
 
 def recreate_lists():
