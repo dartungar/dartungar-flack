@@ -9,9 +9,8 @@ channels = {}
 users = []
 
 app = Flask(__name__)
-app.debug = True
-#app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.secret_key = 'secret'
+#app.debug = True
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 socketio = SocketIO(app)
 
 
@@ -198,8 +197,8 @@ def message_from_server(text):
    return msg
 
 if __name__ == "__main__":
-   socketio.run(app, host='0.0.0.0', port=8080, debug=False)
-   #socketio.run(app)
+   #socketio.run(app, host='0.0.0.0', port=8080, debug=False)
+   socketio.run(app)
    
    
     
