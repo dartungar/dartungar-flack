@@ -1,49 +1,60 @@
 {% extends "layout.html" %}
 
 {% block sidebar %}
-
-<div class="row h-50">
-    <div id="channel-list-container">
-        <span class="sidebar-title">Channels</span>
-        <br>
-        <ul id="channels" class="ml-1">
-    
-        </ul>
-    </div>
-    
-    
-</div>
-
-<div class="border-bottom"> 
-    <a href="#" id="create-channel"><small>create new channel</small></a>
-</div>
-
-<div class="row h-50">
-    <div id="user-list-container">
-        <span class="sidebar-title">Users</span>
-        <br>
-        <ul id="users">
-    
-        </ul> 
-    </div>
+<div class="col-2 h-100 sidebar">
+    <div class="row h-50">
+        <div id="channel-list-container">
+            <span class="sidebar-title">Channels</span>
+            <br>
+            <ul id="channels" class="ml-1">
         
+            </ul>
+        </div>
+        
+        
+    </div>
+
+    <div> 
+        <a href="#" id="create-channel"><small>create new channel</small></a>
+    </div>
+
+    <div id="change-username-container"> 
+        <a href="#" id="change-username"><small>change username</small></a>
+    </div>
+
+    <div class="row h-50" id="users-container">
+        
+        <div id="user-list-container">
+            <span class="sidebar-title">Users</span>
+            
+            <br>
+            <ul id="users">
+            
+            </ul> 
+            
+        </div>
+        
+    </div>
+     
 </div>
 
 {% endblock %}
 
+
 {% block main %}
+<div class="col">
+    <div class="row" id="messages-container">
+        <ul id="messages">
 
-<div class="row h-75 border-bottom">
-    <ul id="messages">
+        </ul>
+    </div>
 
-    </ul>
-</div>
-
-<div class="row w-100">
-    <form class="form-inline w-100">
-            <input type="text" class="form-control mr-3" id="m" autofocus>
-            <button type="submit" class="btn btn-secondary" id="send">Send</button>
-    </form>
+    <div class="row w-100" id="message-form-container">
+        <form class="form-inline w-100">
+                <input type="text" class="form-control col-auto mr-3" id="m" placeholder="type message here..." autofocus>
+                <button type="submit" class="btn btn-outline-info mr-0" id="send">Send</button>
+        </form>
+    </div>
 </div>
 
 {% endblock %}
