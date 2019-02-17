@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var userList = document.querySelector('#users');
     var sendbtn = document.querySelector('#send');
     var createChannelBtn = document.querySelector('#create-channel');
+    var changeUsernameBtn = document.querySelector('#change-username');
     
     var socket = io.connect('http://'+ document.domain + ':' + location.port);
 
@@ -21,9 +22,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var appendMessage =  (list, msg) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span class="timestamp">${msg.timestamp}  </span><span style="color:${msg.color}; font-weight:bold">${msg.username}</span>: ${msg.message}`
+        li.innerHTML = `<span class="timestamp">${msg.timestamp}</span>  <span style="color:${msg.color}; font-weight:bold">${msg.username}</span>: ${msg.message}`
         list.append(li);
-    };
+        // scroll to the bottom TODO
+        scrollMessageContainerToBottom();
+    }
+
+    var scrollMessageContainerToBottom = () => {
+        msgContainer = document.querySelector('#messages-container');
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
 
     //
     var recreateMsgList = messages => {
@@ -31,8 +39,6 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.forEach(msg => {
             appendMessage(msglist, msg)
         });
-        // TODO: список сообщений уползает вниз
-        // может, препендить?
     }
 
 
@@ -117,6 +123,11 @@ document.addEventListener('DOMContentLoaded', function () {
         list.append(li);
     }
 
+    var changeUsername = () => {
+        socket.emit('logout');
+        window.location.replace('/login');
+    }
+
     // emit message to server
     var addNewMessage = function(event) {
         // prevent page reloading
@@ -154,6 +165,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     createChannelBtn.addEventListener('click', createChannel);
+    
+    changeUsernameBtn.addEventListener('click', changeUsername);
 
 
 
@@ -185,46 +198,9 @@ document.addEventListener('DOMContentLoaded', function () {
         recreateUserList(data['users']);
     });
 
-    socket.on('update msglist', messages => {
-        // build message list anew
-        msglist.innerHTML = '';
-        recreateMsgList(messages);          
-        // debug: log message
-        //console.log(data.message);
-    });
-
     socket.on('append channel', data => {
         appendChannel(channelList, data['channel']);
     });
-
-    socket.on('channel already exists', () => {
-        const message = {
-            'username': 'Server',
-            'message': `channel already exists!`
-        }
-        appendMessage(msglist, message);
-    });
-
-    // TODO: пофиксить таймстемпы
-    socket.on('user joined channel', data =>{
-        const message = {
-            'username': 'Server',
-            'message': `user ${data['username']} joined channel!`
-        }
-        appendMessage(msglist, message);
-        currentChannel = data['channel'];
-    });
-
-    // FIXME
-    socket.on('user left channel', data => {
-        const message = {
-            'username': 'Server',
-            'message':`user ${data['username']} left channel`
-        }
-        appendMessage(msglist, message);
-    });
-    
-    
     
 });
 

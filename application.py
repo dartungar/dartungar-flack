@@ -5,10 +5,8 @@ import random
 from flask import Flask, g, render_template, redirect, request, session, url_for
 from flask_socketio import SocketIO, disconnect, emit, join_room, leave_room
 
-#colors = ['green', 'lime', 'yellow', 'blue', 'navy', 'teal', 'purple', 'orange', 'maroon', 'olive', 'red']
 channels = {}
 users = []
-#current_channel = ''
 
 app = Flask(__name__)
 app.debug = True
@@ -16,8 +14,6 @@ app.debug = True
 app.secret_key = 'secret'
 socketio = SocketIO(app)
 
-# TODO: часть функций, возможно, дублируется в JS и тут. Почитай доки flask-socketio, посмотри, что можно "схлопнуть"
-# например ивент connect можно сюда (или даже нужно)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -28,9 +24,6 @@ def index():
    
    return render_template('login.html')
    
-
-# FIXME: после закрытия окна и возвращения в приложение пользователь заново заносится в список!
-# присваивать user_id?
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -45,31 +38,45 @@ def login():
       return redirect(url_for('index'))
    
    return render_template('login.html')
-
+# TODO: проверка на доступность юзернейма
+# и редирект на логин с алертом\флешем "экзистс"
 
 # check if user is 'logged in'
 @app.before_request
 def before_req():
    g.user = session.get('username')
    
-
 @socketio.on('connect')
 def connect():
+   username = session['username']
+   if username not in users:
+      users.append(username)
    
    if not channels.get('global'):
       create_channel('global')
       print('created global channel anew...')
 
    emit('get channel name')
+
+
+@socketio.on('logout')
+def logout():
+   session.pop('username', None)
+   g.pop('user', None)
+   #leave_channel({'channel': session['current_channel']})
+
    
 
 @socketio.on('receive channel name')
 def receive_channel_name(data):
    
    session['current_channel'] = data['channel']
+
+   if data['channel'] not in channels.keys():
+      create_channel_on_event(data)
+
    join_channel(data)
    recreate_lists()
-
 
 
 @socketio.on('new message')
@@ -92,11 +99,9 @@ def new_message(data):
 @socketio.on('new channel')
 def create_channel_on_event(data):
    name = data['channel']
-   new_channel = create_channel(name)
-   if new_channel:
-      recreate_lists()
-
-
+   create_channel(name)
+   recreate_lists()
+      
 
 @socketio.on('join channel')
 def join_channel(data):
@@ -111,7 +116,7 @@ def join_channel(data):
       #channels[channel]['users'].append(session['username'])
       join_room(newchannel)
       
-      msg = {'username': 'Server', 'message': f'user {username} joined channel'}
+      msg = message_from_server(f'user {username} joined channel')
       add_msg(newchannel, msg)
       
       recreate_lists()
@@ -124,20 +129,25 @@ def join_channel(data):
 
 @socketio.on('leave channel')
 def leave_channel(data):
+
+   #username = session['username']
    channel = data['channel']
+   #msg = message_from_server(f'user {username} left channel')
+   #add_msg(channel, msg)
    leave_room(channel)
    #channels[session['current_channel']]['users'].pop(session['username'])
-   emit('user left channel', {'username': session['username']}, room=channel)
    print(f'left room {channel}.')
-
 
 
 @socketio.on('disconnect')
 def user_disconnected():
 
-   channel = session['current_channel']
-   leave_channel({'channel': channel})
-   emit('user disconnected', {'channel': channel})
+   channel = session.get('current_channel')
+   # кажется в этом причина "левых" сообщений user left
+   if channel:
+      leave_channel({'channel': channel})
+   if session.get('username'):
+      users.remove(session['username'])
 
 
 def add_msg(channel, message):
@@ -152,16 +162,18 @@ def add_msg(channel, message):
 
 
 def create_channel(name):
+   
    if name not in list(channels.keys()):
       channels[name] = {'messages': [], 'users': []}
-      return name
+      return True
+   
    else:
-      print('channel already exists')
-      emit('channel already exists')
+      msg = message_from_server(f'channel {name} already exists!')
+      add_msg(session['current_channel'], msg)
+      return False
 
 
 def recreate_lists():
-   # FIXME: выдает ошибку при перезагрузке страницы, мол, нет ключа global
    channel_list = list(channels.keys())
    messages = channels[session['current_channel']]['messages']
    socketio.emit(
@@ -174,6 +186,16 @@ def recreate_lists():
 
    print(f'initting lists: channels - {channel_list} & messages {len(messages)}')
 
+
+def message_from_server(text):
+   timestamp = datetime.datetime.now().strftime('%H:%M:%S')
+   msg = {
+      'username': 'Server', 
+      'timestamp': timestamp, 
+      'message': text
+      }
+   
+   return msg
 
 if __name__ == "__main__":
    #socketio.run(app, host='0.0.0.0', port=8080, debug=False)

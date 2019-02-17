@@ -3,7 +3,8 @@ html, body {
 }
 
 .sidebar {
-    width: 200px;
+    width: 150px;
+    border-right: 2px solid lightblue;
 }
 
 .sidebar-title {
@@ -14,16 +15,33 @@ html, body {
     font-weight: bold;
 }
 
-#channel-list-container, #user-list-container {
+#channel-list-container, #user-list-container, #messages-container {
+    padding: 10px;
     overflow: auto;
 }
 
 #messages, #channels, #users {
     list-style: none;
+    padding: 0px;
+    margin-left: 0px;
+}
+
+#change-username-container {
+    border-top: 2px solid lightblue; 
+}
+
+#messages-container {
+    border-bottom: 2px solid lightblue;
+    min-height: 95%;
+}
+
+#message-form-container {
+    min-height: 1.5rem;
 }
 
 #m {
-    width: 90%;
+    border: 0;
+    width: 93%
 }
 
 .timestamp {
