@@ -15,4 +15,3 @@ Files:
 - custom.css:
 - /templates: layout, login and index pages
 
-
