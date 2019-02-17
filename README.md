@@ -1,7 +1,7 @@
 # CS50w Project 2: Chat
 
 A very simple chat application built with Python, Flask, JS, socket.io and Bootstrap 4
----
+------
 
 Features:
 - 'login' page allows to pick a username
