@@ -1,6 +1,6 @@
-# CS50w Project 2: Chat
+# Dartungar's Flack
 
-A very simple chat application built with Python, Flask, JS, socket.io and Bootstrap 4
+A deadpan simple chat application built with Python, Flask, JS, socket.io and Bootstrap 4.
 ------
 
 Features:
