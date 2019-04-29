@@ -5,19 +5,19 @@ import random
 from flask import Flask, g, render_template, redirect, request, session, url_for
 from flask_socketio import SocketIO, disconnect, emit, join_room, leave_room
 
+# containers for channels and users
 channels = {}
 users = []
 
 app = Flask(__name__)
-#app.debug = True
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 socketio = SocketIO(app)
 
-
+# default route, checks if user is logged in
 @app.route("/", methods=['GET', 'POST'])
 def index():
-   print(g.user)
-
+   
+   #print(g.user)
    if g.user:
       return render_template('index.html')
    
@@ -33,18 +33,20 @@ def login():
       # thanks Eneko Alonso on StackOverflow for random color trick
       session['color'] = "#%06x" % random.randint(0, 0xFFFFFF)
       users.append(username)
-      #print(session['username'])
       return redirect(url_for('index'))
    
    return render_template('login.html')
-# TODO: проверка на доступность юзернейма
-# и редирект на логин с алертом\флешем "экзистс"
+# TODO: check if username is not taken
+
 
 # check if user is 'logged in'
 @app.before_request
 def before_req():
    g.user = session.get('username')
-   
+
+
+### socket.io event listeners ###
+ 
 @socketio.on('connect')
 def connect():
    username = session['username']
@@ -53,7 +55,7 @@ def connect():
    
    if not channels.get('global'):
       create_channel('global')
-      print('created global channel anew...')
+      #print('created global channel anew...')
 
    emit('get channel name')
 
@@ -63,8 +65,7 @@ def logout():
    session.pop('username', None)
    g.pop('user', None)
    #leave_channel({'channel': session['current_channel']})
-
-   
+  
 
 @socketio.on('receive channel name')
 def receive_channel_name(data):
@@ -80,7 +81,7 @@ def receive_channel_name(data):
 
 @socketio.on('new message')
 def new_message(data):
-    print(data['message'])
+    #print(data['message'])
     
     timestamp = datetime.datetime.now().strftime('%H:%M:%S')
     msg = {
@@ -111,7 +112,7 @@ def join_channel(data):
 
       username = session['username']
       session['current_channel'] = newchannel
-      print(f'user {username} attempting to join channel {newchannel}...')
+      #print(f'user {username} attempting to join channel {newchannel}...')
       #channels[channel]['users'].append(session['username'])
       join_room(newchannel)
       
@@ -120,10 +121,10 @@ def join_channel(data):
       
       recreate_lists()
       
-      print(f'user {username} joined channel {newchannel}!')
+      #print(f'user {username} joined channel {newchannel}!')
    
-   else:
-      print('staying on the current channel')
+   #else:
+      #print('staying on the current channel')
 
 
 @socketio.on('leave channel')
@@ -135,7 +136,7 @@ def leave_channel(data):
    #add_msg(channel, msg)
    leave_room(channel)
    #channels[session['current_channel']]['users'].pop(session['username'])
-   print(f'left room {channel}.')
+   #print(f'left room {channel}.')
 
 
 @socketio.on('disconnect')
@@ -149,6 +150,9 @@ def user_disconnected():
       users.remove(session['username'])
 
 
+### helper functions ###
+
+
 def add_msg(channel, message):
    
    msg_capacity = 100
@@ -157,21 +161,21 @@ def add_msg(channel, message):
 
    if len(channels[channel]['messages']) > msg_capacity:
       channels[channel]['messages'] = channels[channel]['messages'][-msg_capacity:]
-      print('truncated message list!') 
+      #print('truncated message list!') 
 
 
 def create_channel(name):
    
    if name not in list(channels.keys()):
       channels[name] = {'messages': [], 'users': []}
-      return True
-   
+      return True   
    else:
       msg = message_from_server(f'channel {name} already exists!')
       add_msg(session['current_channel'], msg)
       return False
 
 
+#'refresher' function to keep everything up to date
 def recreate_lists():
    channel_list = list(channels.keys())
    messages = channels[session['current_channel']]['messages']
@@ -183,7 +187,7 @@ def recreate_lists():
       'users': users
       })
 
-   print(f'initting lists: channels - {channel_list} & messages {len(messages)}')
+   #print(f'initting lists: channels - {channel_list} & messages {len(messages)}')
 
 
 def message_from_server(text):
@@ -195,6 +199,7 @@ def message_from_server(text):
       }
    
    return msg
+
 
 if __name__ == "__main__":
    #socketio.run(app, host='0.0.0.0', port=8080, debug=False)
